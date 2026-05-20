@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Camera to Telegram</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: Arial;
+      text-align: center;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+      background: #111;
+    }
+
+    button {
+      padding: 12px 20px;
+      margin-top: 15px;
+      border: none;
+      background: red;
+      color: white;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    img {
+      width: 250px;
+      margin-top: 10px;
+      border: 3px solid red;
+      border-radius: 10px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>Camera Capture → Telegram</h2>
+
+  <video id="video" autoplay playsinline></video>
+
+  <br>
+  <button onclick="takePhoto()">AMBIL & KIRIM FOTO</button>
+
+  <canvas id="canvas"></canvas>
+  <img id="preview"/>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const preview = document.getElementById("preview");
+
+    // ⚠️ GANTI INI
+    const botToken = "8828269663:AAFm4lyl7Xcaw4t2gb1xgYPzB1U2tSNihvI";
+    const chatId = "7523570109";
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("Kamera tidak diizinkan");
+      }
+    }
+
+    startCamera();
+
+    function takePhoto() {
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      ctx.drawImage(video, 0, 0);
+
+      const imageData = canvas.toDataURL("image/png");
+
+      preview.src = imageData;
+      preview.style.display = "block";
+
+      sendToTelegram(imageData);
+    }
+
+    function sendToTelegram(imageData) {
+      fetch(imageData)
+        .then(res => res.blob())
+        .then(blob => {
+
+          const formData = new FormData();
+          formData.append("chat_id", chatId);
+          formData.append("photo", blob, "photo.png");
+
+          fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+            method: "POST",
+            body: formData
+          })
+          .then(res => res.json())
+          .then(data => {
+            console.log("Terkirim ke Telegram:", data);
+            alert("Foto berhasil dikirim!");
+          })
+          .catch(err => {
+            console.log(err);
+            alert("Gagal kirim ke Telegram");
+          });
+
+        });
+    }
+  </script>
+
+</body>
+</html>
